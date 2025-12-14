@@ -1,0 +1,355 @@
+groups:
+  - name: ai_agent_critical_alerts
+    interval: 30s
+    rules:
+      # Error Rate Alerts
+      - alert: HighErrorRate
+        expr: |
+          100 * (
+            sum(rate(ai_agent_http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(ai_agent_http_requests_total[5m]))
+          ) > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+          action: auto_rollback
+        annotations:
+          summary: "Critical: Error rate above 5%"
+          description: "Error rate is {{ $value | humanizePercentage }}. Automatic rollback triggered."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-Error-Rate-Spike"
+
+      - alert: WarningErrorRate
+        expr: |
+          100 * (
+            sum(rate(ai_agent_http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(ai_agent_http_requests_total[5m]))
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Warning: Error rate above 2%"
+          description: "Error rate is {{ $value | humanizePercentage }}. Monitor closely."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+
+      # Response Time Alerts
+      - alert: CriticalResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(ai_agent_response_duration_milliseconds_bucket[5m])) by (le)
+          ) > 10000
+        for: 3m
+        labels:
+          severity: critical
+          component: performance
+          action: scale_up
+        annotations:
+          summary: "Critical: p95 response time above 10s"
+          description: "p95 response time is {{ $value | humanizeDuration }}. Scaling up pods."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-high-latency"
+
+      - alert: WarningResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(ai_agent_response_duration_milliseconds_bucket[5m])) by (le)
+          ) > 5000
+        for: 5m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "Warning: p95 response time above 5s"
+          description: "p95 response time is {{ $value | humanizeDuration }}. Investigate potential bottlenecks."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+
+      # AI Resolution Rate Alerts
+      - alert: CriticalAIResolutionRate
+        expr: |
+          100 * (
+            sum(rate(ai_agent_tickets_resolved_auto_total[1h]))
+            /
+            sum(rate(ai_agent_tickets_processed_total[1h]))
+          ) < 60
+        for: 10m
+        labels:
+          severity: critical
+          component: ai_engine
+          action: knowledge_base_review
+        annotations:
+          summary: "Critical: AI resolution rate below 60%"
+          description: "AI resolution rate is {{ $value | humanizePercentage }}. Immediate knowledge base review required."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-low-resolution-rate"
+
+      - alert: WarningAIResolutionRate
+        expr: |
+          100 * (
+            sum(rate(ai_agent_tickets_resolved_auto_total[1h]))
+            /
+            sum(rate(ai_agent_tickets_processed_total[1h]))
+          ) < 65
+        for: 15m
+        labels:
+          severity: warning
+          component: ai_engine
+        annotations:
+          summary: "Warning: AI resolution rate below 65%"
+          description: "AI resolution rate is {{ $value | humanizePercentage }}. Monitor and investigate root cause."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+
+      # Queue Depth Alerts
+      - alert: CriticalQueueDepth
+        expr: ai_agent_queue_depth > 500
+        for: 2m
+        labels:
+          severity: critical
+          component: queue
+          action: emergency_scaling
+        annotations:
+          summary: "Critical: Queue depth above 500"
+          description: "Queue depth is {{ $value }}. Emergency scaling initiated."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-queue-overflow"
+
+      - alert: WarningQueueDepth
+        expr: ai_agent_queue_depth > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: queue
+        annotations:
+          summary: "Warning: Queue depth above 100"
+          description: "Queue depth is {{ $value }}. Consider scaling up processing capacity."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+
+      # API Cost Alerts
+      - alert: CriticalAPICost
+        expr: sum(increase(ai_agent_llm_api_cost_dollars[24h])) > 300
+        for: 1m
+        labels:
+          severity: critical
+          component: cost
+          action: rate_limit_activation
+        annotations:
+          summary: "Critical: API cost above $300/day"
+          description: "24h API cost is ${{ $value | humanize }}. Rate limiting activated."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-cost-overrun"
+
+      - alert: WarningAPICost
+        expr: sum(increase(ai_agent_llm_api_cost_dollars[24h])) > 200
+        for: 5m
+        labels:
+          severity: warning
+          component: cost
+        annotations:
+          summary: "Warning: API cost above $200/day"
+          description: "24h API cost is ${{ $value | humanize }}. Monitor usage patterns."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+
+  - name: ai_agent_availability_alerts
+    interval: 30s
+    rules:
+      # Service Availability
+      - alert: ServiceDown
+        expr: up{job="ai-agent"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Critical: AI Agent service is down"
+          description: "Instance {{ $labels.instance }} is down."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-service-down"
+
+      - alert: LowSystemAvailability
+        expr: |
+          100 * (1 - (
+            sum(rate(ai_agent_http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(ai_agent_http_requests_total[5m]))
+          )) < 99.5
+        for: 5m
+        labels:
+          severity: warning
+          component: availability
+        annotations:
+          summary: "Warning: System availability below 99.5%"
+          description: "System availability is {{ $value | humanizePercentage }}."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+
+      # Pod Health
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total{pod=~"ai-agent.*"}[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: kubernetes
+        annotations:
+          summary: "Warning: Pod {{ $labels.pod }} is crash looping"
+          description: "Pod has restarted {{ $value }} times in the last 15 minutes."
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-pod-crash-loop"
+
+      # Database Connection Pool
+      - alert: HighDatabaseConnectionUtilization
+        expr: |
+          100 * (
+            ai_agent_db_connections_active
+            /
+            ai_agent_db_connections_max
+          ) > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Warning: Database connection pool above 85%"
+          description: "Connection pool utilization is {{ $value | humanizePercentage }}."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-db-pool-exhaustion"
+
+  - name: ai_agent_quality_alerts
+    interval: 1m
+    rules:
+      # Customer Satisfaction
+      - alert: LowCustomerSatisfaction
+        expr: avg(ai_agent_customer_satisfaction_score) < 85
+        for: 30m
+        labels:
+          severity: warning
+          component: quality
+        annotations:
+          summary: "Warning: CSAT score below 85%"
+          description: "Customer satisfaction score is {{ $value | humanizePercentage }}."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+
+      # Escalation Rate Spike
+      - alert: HighEscalationRate
+        expr: |
+          100 * (
+            sum(rate(ai_agent_tickets_escalated_total[15m]))
+            /
+            sum(rate(ai_agent_tickets_processed_total[15m]))
+          ) > 35
+        for: 10m
+        labels:
+          severity: warning
+          component: quality
+        annotations:
+          summary: "Warning: Escalation rate above 35%"
+          description: "Escalation rate is {{ $value | humanizePercentage }}. Investigate AI performance."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+
+  - name: ai_agent_resource_alerts
+    interval: 30s
+    rules:
+      # Memory Usage
+      - alert: HighMemoryUsage
+        expr: |
+          100 * (
+            container_memory_working_set_bytes{pod=~"ai-agent.*"}
+            /
+            container_spec_memory_limit_bytes{pod=~"ai-agent.*"}
+          ) > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: resources
+        annotations:
+          summary: "Warning: Pod {{ $labels.pod }} memory usage above 85%"
+          description: "Memory usage is {{ $value | humanizePercentage }}."
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-high-memory"
+
+      # CPU Usage
+      - alert: HighCPUUsage
+        expr: |
+          100 * (
+            rate(container_cpu_usage_seconds_total{pod=~"ai-agent.*"}[5m])
+          ) > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: resources
+        annotations:
+          summary: "Warning: Pod {{ $labels.pod }} CPU usage above 80%"
+          description: "CPU usage is {{ $value | humanizePercentage }}."
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-high-cpu"
+
+      # Disk Usage
+      - alert: HighDiskUsage
+        expr: |
+          100 * (
+            1 - (
+              node_filesystem_avail_bytes{mountpoint="/"}
+              /
+              node_filesystem_size_bytes{mountpoint="/"}
+            )
+          ) > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Warning: Disk usage above 85%"
+          description: "Disk usage on {{ $labels.instance }} is {{ $value | humanizePercentage }}."
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-disk-space"
+
+  - name: ai_agent_llm_alerts
+    interval: 30s
+    rules:
+      # LLM API Failures
+      - alert: HighLLMAPIFailureRate
+        expr: |
+          100 * (
+            sum(rate(ai_agent_llm_api_errors_total[5m]))
+            /
+            sum(rate(ai_agent_llm_api_requests_total[5m]))
+          ) > 5
+        for: 5m
+        labels:
+          severity: critical
+          component: llm
+        annotations:
+          summary: "Critical: LLM API failure rate above 5%"
+          description: "LLM API failure rate is {{ $value | humanizePercentage }}."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-llm-api-failures"
+
+      # LLM Latency
+      - alert: HighLLMLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(ai_agent_llm_response_duration_seconds_bucket[5m])) by (le)
+          ) > 15
+        for: 5m
+        labels:
+          severity: warning
+          component: llm
+        annotations:
+          summary: "Warning: LLM p95 latency above 15s"
+          description: "LLM p95 response time is {{ $value | humanizeDuration }}."
+          dashboard: "https://github.com/eliasdphiri/ai-support-agent/wiki/Operations-Dashboard"
+
+      # Token Budget Exhaustion
+      - alert: TokenBudgetExhaustion
+        expr: |
+          (
+            sum(increase(ai_agent_llm_tokens_total[1h]))
+            /
+            ai_agent_llm_token_budget_hourly
+          ) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: cost
+        annotations:
+          summary: "Warning: Token budget 90% exhausted"
+          description: "Token usage is at {{ $value | humanizePercentage }} of hourly budget."
+          runbook: "https://github.com/eliasdphiri/ai-support-agent/wiki/Runbook-token-budget"

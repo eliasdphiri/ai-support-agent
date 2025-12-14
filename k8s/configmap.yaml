@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-agent-config
+  namespace: ai-support
+data:
+  # Application Configuration
+  APP_ENV: "production"
+  APP_NAME: "AI Customer Support Agent"
+  APP_VERSION: "2.4.1"
+  LOG_LEVEL: "INFO"
+  
+  # API Configuration
+  API_HOST: "0.0.0.0"
+  API_PORT: "8000"
+  API_WORKERS: "4"
+  
+  # LLM Configuration
+  LLM_PRIMARY_PROVIDER: "anthropic"
+  LLM_PRIMARY_MODEL: "claude-sonnet-4-20250514"
+  LLM_FALLBACK_PROVIDER: "openai"
+  LLM_FALLBACK_MODEL: "gpt-4"
+  LLM_TEMPERATURE: "0.3"
+  LLM_MAX_TOKENS: "2000"
+  LLM_TIMEOUT_SECONDS: "30"
+  
+  # Vector Database Configuration
+  PINECONE_ENVIRONMENT: "us-west1-gcp"
+  PINECONE_INDEX_NAME: "support-knowledge"
+  PINECONE_DIMENSION: "1536"
+  
+  # Database Configuration
+  DATABASE_POOL_SIZE: "20"
+  DATABASE_MAX_OVERFLOW: "40"
+  DATABASE_POOL_TIMEOUT: "30"
+  DATABASE_POOL_RECYCLE: "3600"
+  
+  # Redis Configuration
+  REDIS_CACHE_TTL: "3600"
+  REDIS_MAX_CONNECTIONS: "50"
+  
+  # Monitoring Configuration
+  PROMETHEUS_PORT: "9090"
+  METRICS_ENABLED: "true"
+  TRACING_ENABLED: "true"
+  TRACING_SAMPLE_RATE: "0.1"
+  
+  # Jaeger Configuration
+  JAEGER_AGENT_HOST: "jaeger-agent.monitoring.svc.cluster.local"
+  JAEGER_AGENT_PORT: "6831"
+  
+  # AWS Configuration
+  AWS_REGION: "us-east-1"
+  AWS_S3_BUCKET: "ai-agent-attachments"
+  
+  # Security Configuration
+  JWT_ALGORITHM: "HS256"
+  JWT_EXPIRATION_HOURS: "24"
+  
+  # Rate Limiting
+  RATE_LIMIT_ENABLED: "true"
+  RATE_LIMIT_PER_MINUTE: "100"
+  RATE_LIMIT_BURST: "20"
+  
+  # Email Configuration
+  EMAIL_IMAP_SERVER: "imap.gmail.com"
+  EMAIL_IMAP_PORT: "993"
+  EMAIL_SMTP_SERVER: "smtp.gmail.com"
+  EMAIL_SMTP_PORT: "587"
+  EMAIL_FROM_ADDRESS: "eliasdphiri217@gmail.com"
+  
+  # Feature Flags
+  FEATURE_AUTO_ESCALATION: "true"
+  FEATURE_SENTIMENT_ANALYSIS: "true"
+  FEATURE_MULTILINGUAL: "true"
+  FEATURE_VOICE_SUPPORT: "false"
+  
+  # AI Configuration
+  AI_CONFIDENCE_THRESHOLD: "0.75"
+  AI_AUTO_RESOLVE_THRESHOLD: "0.85"
+  ESCALATION_CONFIDENCE_THRESHOLD: "0.60"
+  
+  # Queue Configuration
+  QUEUE_HIGH_PRIORITY_MAX: "100"
+  QUEUE_MEDIUM_PRIORITY_MAX: "300"
+  QUEUE_LOW_PRIORITY_MAX: "500"
+  
+  # SLA Configuration
+  SLA_RESPONSE_TIME_MINUTES: "15"
+  SLA_RESOLUTION_TIME_HOURS: "24"
+  SLA_CRITICAL_RESPONSE_MINUTES: "5"
+  
+  # Cost Management
+  COST_TRACKING_ENABLED: "true"
+  MONTHLY_BUDGET_USD: "2500"
+  DAILY_BUDGET_USD: "100"
+  LLM_COST_ALERT_THRESHOLD_USD: "200"
+  HOURLY_TOKEN_BUDGET: "1000000"
+  DAILY_TOKEN_BUDGET: "20000000"
+  
+  # Kubernetes Configuration
+  K8S_NAMESPACE: "ai-support"
+  K8S_MIN_REPLICAS: "3"
+  K8S_MAX_REPLICAS: "10"
+  K8S_TARGET_CPU_PERCENTAGE: "70"

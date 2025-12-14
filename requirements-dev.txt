@@ -1,0 +1,44 @@
+# AI Customer Support Agent - Development Dependencies
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-timeout==2.2.0
+pytest-xdist==3.5.0
+httpx==0.25.2  # For testing FastAPI
+faker==21.0.0
+
+# Load Testing
+locust==2.20.0
+
+# Code Quality
+black==23.12.0
+isort==5.13.2
+flake8==6.1.0
+pylint==3.0.3
+mypy==1.7.1
+
+# Type Stubs
+types-redis==4.6.0.11
+types-python-dateutil==2.8.19.14
+types-pytz==2023.3.1.1
+
+# Documentation
+mkdocs==1.5.3
+mkdocs-material==9.5.2
+
+# Debugging
+ipython==8.18.1
+ipdb==0.13.13
+
+# Security Scanning
+bandit==1.7.5
+safety==2.3.5
+
+# Pre-commit Hooks
+pre-commit==3.6.0
+
+# API Documentation
+fastapi[all]==0.104.1

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-support
+  labels:
+    name: ai-support
+    environment: production
+    app: ai-customer-support-agent
